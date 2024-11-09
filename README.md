@@ -5,6 +5,7 @@
 ## Features
 - **Rust-based** for optimal performance and reliability.
 - **Supports Duino Coin** mining protocol.
+- **Hashrate** Average hashrate 3 MH/s.
   
 ## Installation
 1. Clone the repository:
