@@ -110,9 +110,30 @@ fn main() {
 
             // Process feedback
             match feedback {
-                "GOOD" => println!("{}Accepted share {} Hashrate {} kH/s Difficulty {} Temp {}{}", SetForegroundColor(Color::Green), result, (hashrate / 1000.0).round() as u64, job[2], get_cpu_temp(), ResetColor),
-                "BAD" => println!("{}Rejected share {} Hashrate {} kH/s Difficulty {} Temp {}{}", SetForegroundColor(Color::Red), result, (hashrate / 1000.0).round() as u64, job[2], get_cpu_temp(), ResetColor),
-                _ => println!("{}Malformed share: {} {} Hashrate {} kH/s Difficulty {} Temp {}{}", SetForegroundColor(Color::Red), feedback, result, (hashrate / 1000.0).round() as u64, job[2], get_cpu_temp(), ResetColor),
+                "GOOD" => {
+                    let hashrate_display = if hashrate >= 1_000_000.0 {
+                        format!("{:.2} mH/s", hashrate / 1_000_000.0)
+                    } else {
+                        format!("{} kH/s", (hashrate / 1000.0).round() as u64)
+                    };
+                    println!("{}Accepted share {} Hashrate {} Difficulty {} Temp {}{}", SetForegroundColor(Color::Green), result, hashrate_display, job[2], get_cpu_temp(), ResetColor);
+                }
+                "BAD" => {
+                    let hashrate_display = if hashrate >= 1_000_000.0 {
+                        format!("{:.2} mH/s", hashrate / 1_000_000.0)
+                    } else {
+                        format!("{} kH/s", (hashrate / 1000.0).round() as u64)
+                    };
+                    println!("{}Rejected share {} Hashrate {} Difficulty {} Temp {}{}", SetForegroundColor(Color::Red), result, hashrate_display, job[2], get_cpu_temp(), ResetColor);
+                }
+                _ => {
+                    let hashrate_display = if hashrate >= 1_000_000.0 {
+                        format!("{:.2} mH/s", hashrate / 1_000_000.0)
+                    } else {
+                        format!("{} kH/s", (hashrate / 1000.0).round() as u64)
+                    };
+                    println!("{}Malformed share: {} {} Hashrate {} Difficulty {} Temp {}{}", SetForegroundColor(Color::Red), feedback, result, hashrate_display, job[2], get_cpu_temp(), ResetColor);
+                }
             }
         }
     }
