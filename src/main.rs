@@ -66,7 +66,7 @@ fn get_cpu_temp() -> String {
         if let Ok(temp_str) = String::from_utf8(output.stdout) {
             if let Ok(temp_kelvin) = temp_str.trim().parse::<f64>() {
                 let celsius_temp = (temp_kelvin / 10.0) - 273.15;
-                return celsius_temp.to_string();
+                return format!("{:.1}", celsius_temp);
             }
         }
     }
@@ -74,6 +74,9 @@ fn get_cpu_temp() -> String {
 }
 
 fn main() {
+    if get_cpu_temp() == "0" {
+        println!("{}Warning: {}Failed to retrieve CPU temperature, try running the script as administrator...", SetForegroundColor(Color::Yellow), ResetColor);
+    }
     loop {
         let (node_address, node_port) = match fetch_pools() {
             (addr, port) => (addr, port),
