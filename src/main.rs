@@ -5,11 +5,15 @@ use std::time::Duration;
 use std::str;
 use reqwest;
 use sha1::{Sha1, Digest};
+use std::process::Command;
+use crossterm::style::{Color, SetForegroundColor, ResetColor};
 
 const USERNAME: &str = "ArduWallet";
 const MINING_KEY: &str = "";
 const USE_LOWER_DIFF: bool = false;
-const DISPLAY_NAME: &str = "RustMiner";
+const SOFTWARE: &str = "Official PC Miner 3.5"; // ['Official PC Miner 3.5', 'Official ESP8266 Miner 3.5', 'Official ESP32 Miner 3.5', 'Duino-Coin AVR Miner 4.2'
+const IDENTIFIER: &str = "Rust1"; // RIG1 - RPi
+const CHIP_ID: &str = "1";
 
 fn fetch_pools() -> (String, u16) {
     loop {
@@ -20,7 +24,7 @@ fn fetch_pools() -> (String, u16) {
                 }
             }
             Err(_) => {
-                println!("Error retrieving mining node, retrying in 15s");
+                println!("{}Error retrieving mining node, retrying in 15s{}", SetForegroundColor(Color::Red), ResetColor);
                 thread::sleep(Duration::from_secs(15));
             }
         }
@@ -50,6 +54,25 @@ fn solve_job(job: Vec<&str>) -> (u64, f64) {
     (0, 0.0) // Return Fallback
 }
 
+fn get_cpu_temp() -> String {
+    if cfg!(target_os = "windows") {
+        let output = Command::new("powershell")
+            .arg("-NoProfile")
+            .arg("-Command")
+            .arg("Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace \"root/wmi\" | Select-Object -ExpandProperty CurrentTemperature")
+            .output()
+            .expect("Failed to execute command");
+
+        if let Ok(temp_str) = String::from_utf8(output.stdout) {
+            if let Ok(temp_kelvin) = temp_str.trim().parse::<f64>() {
+                let celsius_temp = (temp_kelvin / 10.0) - 273.15;
+                return celsius_temp.to_string();
+            }
+        }
+    }
+    "0".to_string()
+}
+
 fn main() {
     loop {
         let (node_address, node_port) = match fetch_pools() {
@@ -60,12 +83,13 @@ fn main() {
         let mut soc = TcpStream::connect(format!("{}:{}", node_address, node_port)).expect("Failed to connect to server");
         let mut buffer = [0; 100];
         soc.read(&mut buffer).expect("Failed to read from server");
-        println!("Server Version: {}", str::from_utf8(&buffer).unwrap());
+        println!("{}Server Version: {}{}", SetForegroundColor(Color::Yellow), str::from_utf8(&buffer).unwrap().replace("\n", ""), ResetColor);
+        println!("{}Logged in as: {}{}", SetForegroundColor(Color::Yellow), if IDENTIFIER.is_empty() { SOFTWARE } else { IDENTIFIER }, ResetColor);
 
         // Mine
         loop {
             let difficulty = if USE_LOWER_DIFF { "LOW" } else { "MEDIUM" };
-            let job_request = format!("JOB,{},{},{}", USERNAME, difficulty, MINING_KEY);
+            let job_request = format!("JOB,{},{},{},{}@{}\n", USERNAME, difficulty, MINING_KEY, get_cpu_temp(), "0");
             soc.write_all(job_request.as_bytes()).expect("Failed to send job request");
 
             // Receive job
@@ -76,7 +100,7 @@ fn main() {
             let (result, hashrate) = solve_job(job.clone());
 
             // Send result
-            let result_message = format!("{},{},{}", result, hashrate, DISPLAY_NAME);
+            let result_message = format!("{},{},{},{},DUCOID{}", result, hashrate, SOFTWARE, IDENTIFIER, CHIP_ID);
             soc.write_all(result_message.as_bytes()).expect("Failed to send result");
 
             // Get feedback
@@ -86,11 +110,10 @@ fn main() {
 
             // Process feedback
             match feedback {
-                "GOOD" => println!("Accepted share {} Hashrate {} kH/s Difficulty {}", result, (hashrate / 1000.0).round() as u64, job[2]),
-                "BAD" => println!("Rejected share {} Hashrate {} kH/s Difficulty {}", result, (hashrate / 1000.0).round() as u64, job[2]),
-                _ => println!("Malformed share: {} {} Hashrate {} kH/s Difficulty {}", feedback, result, (hashrate / 1000.0).round() as u64, job[2]),
+                "GOOD" => println!("{}Accepted share {} Hashrate {} kH/s Difficulty {} Temp {}{}", SetForegroundColor(Color::Green), result, (hashrate / 1000.0).round() as u64, job[2], get_cpu_temp(), ResetColor),
+                "BAD" => println!("{}Rejected share {} Hashrate {} kH/s Difficulty {} Temp {}{}", SetForegroundColor(Color::Red), result, (hashrate / 1000.0).round() as u64, job[2], get_cpu_temp(), ResetColor),
+                _ => println!("{}Malformed share: {} {} Hashrate {} kH/s Difficulty {} Temp {}{}", SetForegroundColor(Color::Red), feedback, result, (hashrate / 1000.0).round() as u64, job[2], get_cpu_temp(), ResetColor),
             }
         }
     }
 }
-
