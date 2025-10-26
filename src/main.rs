@@ -13,7 +13,7 @@ const ASK_DATA: bool = false;
 const DEFAULT_USERNAME: &str = "ArduWallet";
 const DEFAULT_MINING_KEY: &str = "";
 const DEFAULT_USE_LOWER_DIFF: bool = false;
-const DEFAULT_SOFTWARE: &str = "Official PC Miner 3.5"; // ['Official PC Miner 3.5', 'Official ESP8266 Miner 3.5', 'Official ESP32 Miner 3.5', 'Duino-Coin AVR Miner 4.2'
+const DEFAULT_SOFTWARE: &str = "Official PC Miner 3.5"; // ['Official PC Miner 3.5', 'Official ESP8266 Miner 3.5', 'Official ESP32 Miner 3.5', 'Duino-Coin AVR Miner 4.2']
 const DEFAULT_IDENTIFIER: &str = "Rust1"; // RIG1 - RPi
 const DEFAULT_CHIP_ID: &str = "1";
 
